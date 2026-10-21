@@ -63,7 +63,7 @@ ls -la /dev/socket/qmux_radio/ 2>/dev/null || echo "(folder tidak bisa dibuka)"
 ps -A 2>/dev/null | grep -iE "qmux|qrtr|rild" || ps 2>/dev/null | grep -iE "qmux|qrtr|rild"
 
 echo ""
-echo "===== 6. Helper bandlock-ro v0.12 (diag EFS2: baca file kunci sel di modem) ====="
+echo "===== 6. Helper bandlock-ro v0.13 (diag EFS2: baca file kunci sel di modem) ====="
 HELPER=""
 for cand in "$DIR/bandlock-ro" /sdcard/bandlock-probe/bandlock-ro /data/local/tmp/bandlock-ro; do
   if [ -f "$cand" ]; then HELPER="$cand"; break; fi
