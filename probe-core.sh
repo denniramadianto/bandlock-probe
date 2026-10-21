@@ -63,7 +63,7 @@ ls -la /dev/socket/qmux_radio/ 2>/dev/null || echo "(folder tidak bisa dibuka)"
 ps -A 2>/dev/null | grep -iE "qmux|qrtr|rild" || ps 2>/dev/null | grep -iE "qmux|qrtr|rild"
 
 echo ""
-echo "===== 6. Helper bandlock-ro v0.4 (diag EFS2 v0.5: baca file kunci sel di modem) ====="
+echo "===== 6. Helper bandlock-ro v0.6 (diag EFS2: baca file kunci sel di modem) ====="
 HELPER=""
 for cand in "$DIR/bandlock-ro" /sdcard/bandlock-probe/bandlock-ro /data/local/tmp/bandlock-ro; do
   if [ -f "$cand" ]; then HELPER="$cand"; break; fi
@@ -94,9 +94,8 @@ echo "(bila kosong: tidak ada catatan penolakan / dmesg tidak terbaca)"
 
 echo ""
 echo "===== SELESAI — kirim file hasil-probe.txt ke Muse ====="
-} > "$TMP" 2>&1
+} 2>&1 | tee "$TMP"
 
-cat "$TMP"
 cp "$TMP" "$OUT" 2>/dev/null
 rm -f "$TMP" 2>/dev/null
 echo ""

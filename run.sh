@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# RUN_SH_VERSION=3
+# RUN_SH_VERSION=4
 # =============================================================
 # BandLock Probe — penjalan otomatis (cukup unduh file ini 1x)
 #
@@ -56,6 +56,7 @@ $DL "$DIR/probe-core.sh.new" "$BASE/probe-core.sh" || { echo "UNDUH probe-core.s
 mv "$DIR/bandlock-ro.new" "$DIR/bandlock-ro"
 mv "$DIR/probe-core.sh.new" "$DIR/probe-core.sh"
 echo "Unduhan OK. Menjalankan probe sebagai root (mungkin muncul permintaan izin Magisk)..."
+echo "Output tampil BERJALAN langsung di bawah. Titik-titik (....) = sedang menunggu jawaban modem — itu tanda bekerja, bukan macet."
 echo ""
 su -c "sh $DIR/probe-core.sh"
 echo ""
