@@ -9,8 +9,9 @@
 #   1. Mengunduh bandlock-ro + probe-core.sh versi TERBARU dari
 #      repo GitHub denniramadianto/bandlock-probe (branch main)
 #   2. Menjalankan probe sebagai root via su
-#   3. Hasil tersimpan di /sdcard/bandlock-probe/hasil-probe.txt
-#      -> kirim file itu ke Muse, selesai.
+#   3. Hasil tersimpan di /sdcard/bandlock-probe/hasil-probe.txt lalu
+#      OTOMATIS diunggah ke repo privat bandlock-hasil (bila token sudah
+#      disimpan di ~/.bandlock-token) -> Muse mengambilnya dari sana.
 # =============================================================
 
 BASE="https://raw.githubusercontent.com/denniramadianto/bandlock-probe/main"
@@ -43,7 +44,31 @@ echo "Unduhan OK. Menjalankan probe sebagai root (mungkin muncul permintaan izin
 echo ""
 su -c "sh $DIR/probe-core.sh"
 echo ""
-echo "=================================================="
-echo "SELESAI. Kirim file ini ke Muse:"
-echo "  $DIR/hasil-probe.txt"
-echo "=================================================="
+
+# --- Unggah hasil otomatis ke repo privat bandlock-hasil ---
+# Token fine-grained khusus repo itu, disimpan lokal di Termux: ~/.bandlock-token
+TOKEN_FILE="$HOME/.bandlock-token"
+HASIL="$DIR/hasil-probe.txt"
+if [ -f "$TOKEN_FILE" ] && [ -f "$HASIL" ]; then
+  TOKEN=$(tr -d '[:space:]' < "$TOKEN_FILE")
+  REPO="denniramadianto/bandlock-hasil"
+  API="https://api.github.com/repos/$REPO/contents/hasil-probe.txt"
+  echo "Mengunggah hasil ke Muse (repo privat bandlock-hasil)..."
+  OLD=$(curl -fsSL -H "Authorization: Bearer $TOKEN" "$API" 2>/dev/null | sed -n 's/.*"sha": "\([0-9a-f]*\)".*/\1/p' | head -1)
+  B64=$(base64 -w 0 "$HASIL" 2>/dev/null || base64 "$HASIL" | tr -d '\n')
+  SHA_PART=""
+  if [ -n "$OLD" ]; then SHA_PART=", \"sha\": \"$OLD\""; fi
+  printf '{"message": "hasil probe %s", "content": "%s"%s}' "$(date '+%Y-%m-%d %H:%M')" "$B64" "$SHA_PART" > "$DIR/.upload.json"
+  if curl -fsSL -X PUT -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" -d @"$DIR/.upload.json" "$API" >/dev/null 2>&1; then
+    echo "Hasil TERKIRIM OTOMATIS ke Muse. Kamu tidak perlu mengirim apa-apa lagi."
+  else
+    echo "Unggah otomatis GAGAL — sebagai cadangan, kirim manual file: $HASIL"
+  fi
+  rm -f "$DIR/.upload.json"
+else
+  echo "=================================================="
+  echo "SELESAI. Kirim file ini ke Muse:"
+  echo "  $HASIL"
+  echo "(unggah otomatis aktif setelah token disimpan — lihat petunjuk Muse)"
+  echo "=================================================="
+fi
