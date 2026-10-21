@@ -18,12 +18,19 @@ DIR=/sdcard/bandlock-probe
 mkdir -p "$DIR" 2>/dev/null
 
 # cari pengunduh yang tersedia (Termux: curl/wget)
+# Termux TIDAK membawa curl dari bawaan -> pasang sendiri bila belum ada.
 DL=""
 if command -v curl >/dev/null 2>&1; then DL="curl -fsSL -o";
 elif command -v wget >/dev/null 2>&1; then DL="wget -q -O";
 fi
+if [ -z "$DL" ] && command -v pkg >/dev/null 2>&1; then
+  echo "curl belum ada di Termux — memasangnya dulu (sekali saja)..."
+  pkg install -y curl
+  if command -v curl >/dev/null 2>&1; then DL="curl -fsSL -o"; fi
+fi
 if [ -z "$DL" ]; then
-  echo "curl/wget tidak ditemukan. Di Termux jalankan dulu:  pkg install curl"
+  echo "curl/wget tidak ditemukan dan pemasangan otomatis gagal."
+  echo "Di Termux jalankan manual:  pkg install -y curl   lalu ulangi run.sh."
   exit 1
 fi
 
