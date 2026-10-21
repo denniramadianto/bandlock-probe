@@ -1,4 +1,5 @@
 #!/system/bin/sh
+# RUN_SH_VERSION=3
 # =============================================================
 # BandLock Probe — penjalan otomatis (cukup unduh file ini 1x)
 #
@@ -35,6 +36,20 @@ if [ -z "$DL" ]; then
   exit 1
 fi
 
+# Perbarui diri sendiri bila versi di repo lebih baru (berdasarkan RUN_SH_VERSION)
+if [ -z "$RUN_SH_SELFUPDATE" ] && [ -f "$DIR/run.sh" ]; then
+  if $DL "$DIR/run.sh.new" "$BASE/run.sh" 2>/dev/null; then
+    NEW_V=$(sed -n 's/^# RUN_SH_VERSION=//p' "$DIR/run.sh.new" | head -1)
+    CUR_V=$(sed -n 's/^# RUN_SH_VERSION=//p' "$DIR/run.sh" | head -1)
+    if [ -n "$NEW_V" ] && [ "$NEW_V" != "$CUR_V" ]; then
+      mv "$DIR/run.sh.new" "$DIR/run.sh"
+      echo "run.sh diperbarui (v$CUR_V -> v$NEW_V) — menjalankan ulang..."
+      RUN_SH_SELFUPDATE=1 exec sh "$DIR/run.sh"
+    fi
+  fi
+  rm -f "$DIR/run.sh.new"
+fi
+
 echo "Mengunduh versi terbaru dari GitHub..."
 $DL "$DIR/bandlock-ro.new" "$BASE/bandlock-ro" || { echo "UNDUH bandlock-ro GAGAL — cek internet HP."; exit 1; }
 $DL "$DIR/probe-core.sh.new" "$BASE/probe-core.sh" || { echo "UNDUH probe-core.sh GAGAL — cek internet HP."; exit 1; }
@@ -59,10 +74,14 @@ if [ -f "$TOKEN_FILE" ] && [ -f "$HASIL" ]; then
   SHA_PART=""
   if [ -n "$OLD" ]; then SHA_PART=", \"sha\": \"$OLD\""; fi
   printf '{"message": "hasil probe %s", "content": "%s"%s}' "$(date '+%Y-%m-%d %H:%M')" "$B64" "$SHA_PART" > "$DIR/.upload.json"
-  if curl -fsSL -X PUT -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" -d @"$DIR/.upload.json" "$API" >/dev/null 2>&1; then
+  HTTP=$(curl -sSL -w '\n%{http_code}' -X PUT -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" -d @"$DIR/.upload.json" "$API" 2>/dev/null)
+  CODE=$(printf '%s' "$HTTP" | tail -n 1)
+  if [ "$CODE" = "200" ] || [ "$CODE" = "201" ]; then
     echo "Hasil TERKIRIM OTOMATIS ke Muse. Kamu tidak perlu mengirim apa-apa lagi."
   else
-    echo "Unggah otomatis GAGAL — sebagai cadangan, kirim manual file: $HASIL"
+    GMSG=$(printf '%s' "$HTTP" | sed -n 's/.*"message": *"\([^"]*\)".*/\1/p' | head -1)
+    echo "Unggah otomatis GAGAL (HTTP $CODE): $GMSG"
+    echo "Kirim baris error di atas ke Muse. Cadangan: kirim manual file: $HASIL"
   fi
   rm -f "$DIR/.upload.json"
 else
